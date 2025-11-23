@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="result_style.css">
+    <title>result</title>
+</head>
+<body>
+    <div class="container">
+        <h1>🎄당신을 위한 크리스마스 캐롤 🎄</h1>
+        <div id="results">
+            <h2 id="top1-title">로딩 중...</h2>
+            <iframe id="top1-iframe" width="100%" height="80" frameborder="0" allow="encrypted-media"></iframe>
+            <h3 id="top2-title">로딩 중...</h3>
+            <h3 id="top3-title">로딩 중...</h3>
+        </div>
+    </div>
+
+    <script>
+        // carols.json 불러오기
+        fetch('carols.json')
+            .then(response => response.json())
+            .then(carols => {
+                // 사용자 태그 프로필 불러오기
+                const userprofile = JSON.parse(sessionStorage.getItem("userprofile")) || [];
+                
+                // 자카드 유사도 계산 함수(교집합/합집합)
+                function jaccardSimilarity(userprofile, carolsTags) {
+                    // 교집합 개수
+                    const intersection = userprofile.filter(tag => carolsTags.includes(tag)).length;
+                    // 합집합 개수 A + B - 교집합
+                    const union = userprofile.length + carolsTags.length - intersection;
+                    return intersection / union;
+                }
+                
+                // 캐롤 유사도 계산
+                const scoredCarols = carols.map(carol => {
+                    const score = jaccardSimilarity(userprofile, carol.tags);
+                    return { ...carol, score };
+                });
+                
+                scoredCarols.sort((a, b) => b.score - a.score);
+                const top3 = scoredCarols.slice(0, 3);
+                
+                // '로딩 중...' 없애기
+                document.getElementById("results").innerHTML = "";
+                
+                // 상위 3개 캐롤 결과 표시
+                top3.forEach((song, index) => {
+                    let cardhtml = "";
+                    if(index == 0) {
+                        cardhtml = `
+                            <div class="song-card">
+                                <h2>1위 ${song.title} - ${song.artist}</h2>
+                                <iframe 
+                                    data-testid="embed-iframe" 
+                                    style="border-radius:12px" 
+                                    src="https://open.spotify.com/embed/track/${song.spotifyId}?utm_source=generator&theme=0" 
+                                    width="100%" 
+                                    height="152" 
+                                    frameBorder="0" 
+                                    allowfullscreen="" 
+                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                    loading="lazy">
+                                </iframe>
+                            </div>
+                        `;
+                    } else {
+                        cardhtml = `
+                            <div class="song-card">
+                                <h3>${index + 1}위 ${song.title} - ${song.artist}</h3>
+                                <iframe 
+                                    data-testid="embed-iframe" 
+                                    style="border-radius:12px" 
+                                    src="https://open.spotify.com/embed/track/${song.spotifyId}?utm_source=generator&theme=0" 
+                                    width="100%" 
+                                    height="152" 
+                                    frameBorder="0" 
+                                    allowfullscreen="" 
+                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                    loading="lazy">
+                                </iframe> 
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById("results").innerHTML += cardhtml;
+                });
+                
+                sessionStorage.removeItem("userprofile");
+            })
+    </script>
+</body>
+</html>
